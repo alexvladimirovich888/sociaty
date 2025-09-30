@@ -1,0 +1,1696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Dynamics Simulator</title>
+    <link rel="icon" type="image/png" href="./blue.png">
+    <link rel="shortcut icon" type="image/png" href="./blue.png">
+    <link rel="apple-touch-icon" href="./blue.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @font-face {
+            font-family: 'Sonic';
+            src: url('./ttf/sonic-1-title-card-fixed.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
+        /* Apply Sonic font globally */
+        * {
+            font-family: 'Sonic', sans-serif !important;
+        }
+        
+        /* Keep normal text sizes */
+        body {
+            font-size: 14px !important;
+        }
+        
+        h1 {
+            font-size: 2rem !important;
+        }
+        
+        h2 {
+            font-size: 1.5rem !important;
+        }
+        
+        h3 {
+            font-size: 1.125rem !important;
+        }
+        
+        .text-xs {
+            font-size: 0.75rem !important;
+        }
+        
+        .text-sm {
+            font-size: 0.875rem !important;
+        }
+        
+        .text-xl {
+            font-size: 1.25rem !important;
+        }
+        
+        .text-4xl {
+            font-size: 2.25rem !important;
+        }
+        
+        .text-2xl {
+            font-size: 1.5rem !important;
+        }
+        
+        /* Reduce table header font size by 30% */
+        table thead th {
+            font-size: 0.5rem !important;
+        }
+        
+        /* Achievement notification styles */
+        .achievement-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #000;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: all 0.3s ease;
+            max-width: 300px;
+            border: 2px solid #ffd700;
+        }
+        
+        .achievement-notification.show {
+            transform: translateX(0);
+        }
+        
+        .achievement-notification .achievement-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .achievement-notification .achievement-desc {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .achievement-notification .achievement-icon {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+        
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1f2937, #374151);
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+            border: 2px solid #4f46e5;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-overlay.show .modal-content {
+            transform: scale(1);
+        }
+        
+        .modal-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #4f46e5;
+            padding-bottom: 15px;
+        }
+        
+        .modal-character-img {
+            width: 60px;
+            height: 60px;
+            margin-right: 15px;
+            border-radius: 10px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            border: 3px solid #4f46e5;
+        }
+        
+        .modal-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #ffffff;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        
+        .modal-close:hover {
+            color: #ffffff;
+        }
+        
+        .modal-section {
+            margin-bottom: 20px;
+        }
+        
+        .modal-section h3 {
+            font-size: 1.2rem;
+            color: #4f46e5;
+            margin-bottom: 10px;
+            border-left: 4px solid #4f46e5;
+            padding-left: 10px;
+        }
+        
+        .modal-section ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .modal-section li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+            color: #d1d5db;
+        }
+        
+        .modal-section li.positive::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-weight: bold;
+        }
+        
+        .modal-section li.negative::before {
+            content: "✗";
+            position: absolute;
+            left: 0;
+            color: #ef4444;
+            font-weight: bold;
+        }
+        
+        .modal-section li.influence::before {
+            content: "⚡";
+            position: absolute;
+            left: 0;
+            color: #f59e0b;
+            font-weight: bold;
+        }
+        
+        .table-row {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .table-row:hover {
+            background-color: rgba(79, 70, 229, 0.2) !important;
+        }
+        
+        /* Click hint button styles */
+        .click-hint {
+            position: relative;
+        }
+        
+        .click-hint::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(79, 70, 229, 0.1);
+            border-radius: 8px;
+            z-index: 50;
+            pointer-events: none;
+        }
+        
+        .click-button {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 10px rgba(255, 107, 107, 0.4);
+            animation: clickPulse 1.5s infinite;
+            z-index: 100;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            pointer-events: auto;
+        }
+        
+        .click-button:hover {
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.6);
+        }
+        
+        @keyframes clickPulse {
+            0% { 
+                transform: translateY(-50%) scale(1);
+                box-shadow: 0 2px 10px rgba(255, 107, 107, 0.4);
+            }
+            50% { 
+                transform: translateY(-50%) scale(1.15);
+                box-shadow: 0 4px 20px rgba(255, 107, 107, 0.8);
+            }
+            100% { 
+                transform: translateY(-50%) scale(1);
+                box-shadow: 0 2px 10px rgba(255, 107, 107, 0.4);
+            }
+        }
+        
+        .click-button.fade-out {
+            opacity: 0;
+            transform: translateY(-50%) scale(0.8);
+        }
+        
+        .person {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            transition: all 0.5s ease;
+        }
+        
+        .person.elite {
+            background-image: url('./img/pink.png');
+        }
+        
+        .person.middle {
+            background-image: url('./img/blue.png');
+        }
+        
+        .person.working {
+            background-image: url('./img/green.png');
+        }
+        
+        .person.vulnerable {
+            background-image: url('./img/red.png');
+        }
+        
+        .city-bg {
+            background-image: url('./img/city.webp');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+            overflow: hidden;
+        }
+        
+
+        .slider-container {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+        }
+        
+        .table-row:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Achievement notification container -->
+    <div id="achievementNotification" class="achievement-notification">
+        <div class="achievement-title">
+            <span class="achievement-icon">🏆</span>
+            <span id="achievementTitle"></span>
+        </div>
+        <div class="achievement-desc" id="achievementDesc"></div>
+    </div>
+    
+    <!-- Group Info Modal -->
+    <div id="groupModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeGroupModal()">&times;</button>
+            <div class="modal-header">
+                <div id="modalCharacterImg" class="modal-character-img"></div>
+                <div id="modalTitle" class="modal-title"></div>
+            </div>
+            
+            <div class="modal-section">
+                <h3>Advantages</h3>
+                <ul id="modalAdvantages"></ul>
+            </div>
+            
+            <div class="modal-section">
+                <h3>Disadvantages</h3>
+                <ul id="modalDisadvantages"></ul>
+            </div>
+            
+            <div class="modal-section">
+                <h3>Social Influence</h3>
+                <ul id="modalInfluence"></ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="w-full px-2 py-4">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-2">City Dynamics Simulator</h1>
+            <p class="text-xl text-gray-300">Adjust policy levers and observe social impacts in real-time</p>
+        </header>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- City Visualization -->
+            <div class="city-bg rounded-xl h-[500px] lg:h-[600px] lg:col-span-2 relative" id="cityCanvas">
+
+            </div>
+            
+            <!-- Stats Panel -->
+            <div class="bg-gray-800 rounded-xl p-4 overflow-auto">
+                <div class="flex items-center justify-between mb-4 border-b border-gray-700 pb-2">
+                    <h2 class="text-2xl font-semibold">Social Statistics</h2>
+                    <a href="https://x.com" target="_blank" class="twitter-link">
+                        <img src="./img/twitter.png" alt="Twitter" class="w-16 h-16 transition-transform duration-200 hover:scale-110 hover:opacity-80">
+                    </a>
+                </div>
+                
+                <!-- Political Parties -->
+                <div class="mb-4">
+                    <h3 class="text-sm font-medium mb-2 text-gray-400">Political Systems</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="socialismBtn" class="bg-red-600 hover:bg-red-700 text-xs px-2 py-1 rounded transition-colors">
+                            ☭ Socialism
+                        </button>
+                        <button id="capitalismBtn" class="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1 rounded transition-colors">
+                            💼 Capitalism
+                        </button>
+                        <button id="socialDemocracyBtn" class="bg-purple-600 hover:bg-purple-700 text-xs px-2 py-1 rounded transition-colors">
+                            🏛️ Social Democracy
+                        </button>
+                        <button id="libertarianBtn" class="bg-yellow-600 hover:bg-yellow-700 text-xs px-2 py-1 rounded transition-colors">
+                            🗽 Libertarian
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="text-left py-2">Group</th>
+                                <th class="text-right py-2">Mood</th>
+                                <th class="text-right py-2">Income</th>
+                                <th class="text-right py-2">Net Income</th>
+                                <th class="text-right py-2">Unemployment</th>
+                                <th class="text-right py-2">Satisfaction</th>
+                            </tr>
+                        </thead>
+                        <tbody id="statsTable">
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="text-lg font-medium mb-2">Economic Indicators</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="bg-gray-700 rounded p-2">
+                            <div class="text-sm text-gray-400">GDP</div>
+                            <div class="text-xl font-bold" id="gdpIndicator">$1.2T</div>
+                        </div>
+                        <div class="bg-gray-700 rounded p-2">
+                            <div class="text-sm text-gray-400">Gini Index</div>
+                            <div class="text-xl font-bold" id="giniIndicator">0.42</div>
+                        </div>
+                        <div class="bg-gray-700 rounded p-2">
+                            <div class="text-sm text-gray-400">Poverty Rate</div>
+                            <div class="text-xl font-bold" id="povertyIndicator">12.5%</div>
+                        </div>
+                        <div class="bg-gray-700 rounded p-2">
+                            <div class="text-sm text-gray-400">Happiness</div>
+                            <div class="text-xl font-bold" id="happinessIndicator">6.8/10</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Policy Controls -->
+        <div class="mt-4 bg-gray-800 rounded-xl p-4 slider-container">
+            <h2 class="text-2xl font-semibold mb-6">Policy Controls</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Tax Rates -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-medium border-b border-gray-700 pb-2">Tax Rates</h3>
+                    
+                    <div>
+                        <label class="block text-sm mb-1">Elite Tax Rate</label>
+                        <input type="range" min="0" max="60" value="25" class="w-full" id="eliteTax">
+                        <div class="flex justify-between text-xs">
+                            <span>0%</span>
+                            <span id="eliteTaxValue">25%</span>
+                            <span>60%</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm mb-1">Middle Class Tax Rate</label>
+                        <input type="range" min="0" max="40" value="20" class="w-full" id="middleTax">
+                        <div class="flex justify-between text-xs">
+                            <span>0%</span>
+                            <span id="middleTaxValue">20%</span>
+                            <span>40%</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm mb-1">Working Class Tax Rate</label>
+                        <input type="range" min="0" max="30" value="15" class="w-full" id="workingTax">
+                        <div class="flex justify-between text-xs">
+                            <span>0%</span>
+                            <span id="workingTaxValue">15%</span>
+                            <span>30%</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm mb-1">Vulnerable Tax Rate</label>
+                        <input type="range" min="0" max="20" value="5" class="w-full" id="vulnerableTax">
+                        <div class="flex justify-between text-xs">
+                            <span>0%</span>
+                            <span id="vulnerableTaxValue">5%</span>
+                            <span>20%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Social Benefits -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-medium border-b border-gray-700 pb-2">Social Benefits</h3>
+                    
+                    <div>
+                        <label class="block text-sm mb-1">Universal Basic Income</label>
+                        <input type="range" min="0" max="2000" value="200" step="50" class="w-full" id="ubi">
+                        <div class="flex justify-between text-xs">
+                            <span>$0</span>
+                            <span id="ubiValue">$200</span>
+                            <span>$2000</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm mb-1">Unemployment Benefits</label>
+                        <input type="range" min="0" max="1500" value="500" step="50" class="w-full" id="unemploymentBenefit">
+                        <div class="flex justify-between text-xs">
+                            <span>$0</span>
+                            <span id="unemploymentBenefitValue">$500</span>
+                            <span>$1500</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm mb-1">Housing Support</label>
+                        <input type="range" min="0" max="1000" value="200" step="50" class="w-full" id="housingSupport">
+                        <div class="flex justify-between text-xs">
+                            <span>$0</span>
+                            <span id="housingSupportValue">$200</span>
+                            <span>$1000</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm mb-1">Healthcare Subsidy</label>
+                        <input type="range" min="0" max="1000" value="300" step="50" class="w-full" id="healthcareSubsidy">
+                        <div class="flex justify-between text-xs">
+                            <span>$0</span>
+                            <span id="healthcareSubsidyValue">$300</span>
+                            <span>$1000</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Labor Policies -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-medium border-b border-gray-700 pb-2">Labor Policies</h3>
+                    
+                    <div>
+                        <label class="block text-sm mb-1">Minimum Wage</label>
+                        <input type="range" min="0" max="25" value="10" step="0.5" class="w-full" id="minWage">
+                        <div class="flex justify-between text-xs">
+                            <span>$0</span>
+                            <span id="minWageValue">$10.0</span>
+                            <span>$25.0</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm mb-1">Work Week Hours</label>
+                        <input type="range" min="20" max="60" value="40" class="w-full" id="workWeek">
+                        <div class="flex justify-between text-xs">
+                            <span>20h</span>
+                            <span id="workWeekValue">40h</span>
+                            <span>60h</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm mb-1">Vacation Days</label>
+                        <input type="range" min="0" max="30" value="10" class="w-full" id="vacationDays">
+                        <div class="flex justify-between text-xs">
+                            <span>0</span>
+                            <span id="vacationDaysValue">10</span>
+                            <span>30</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm mb-1">Retirement Age</label>
+                        <input type="range" min="50" max="75" value="65" class="w-full" id="retirementAge">
+                        <div class="flex justify-between text-xs">
+                            <span>50</span>
+                            <span id="retirementAgeValue">65</span>
+                            <span>75</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Government Spending -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-medium border-b border-gray-700 pb-2">Government Spending</h3>
+                    
+                    <div>
+                        <label class="block text-sm mb-1">Healthcare</label>
+                        <input type="range" min="0" max="30" value="15" class="w-full" id="healthcareSpending">
+                        <div class="flex justify-between text-xs">
+                            <span>0%</span>
+                            <span id="healthcareSpendingValue">15%</span>
+                            <span>30%</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm mb-1">Education</label>
+                        <input type="range" min="0" max="30" value="12" class="w-full" id="educationSpending">
+                        <div class="flex justify-between text-xs">
+                            <span>0%</span>
+                            <span id="educationSpendingValue">12%</span>
+                            <span>30%</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm mb-1">Defense</label>
+                        <input type="range" min="0" max="30" value="10" class="w-full" id="defenseSpending">
+                        <div class="flex justify-between text-xs">
+                            <span>0%</span>
+                            <span id="defenseSpendingValue">10%</span>
+                            <span>30%</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm mb-1">Infrastructure</label>
+                        <input type="range" min="0" max="30" value="8" class="w-full" id="infrastructureSpending">
+                        <div class="flex justify-between text-xs">
+                            <span>0%</span>
+                            <span id="infrastructureSpendingValue">8%</span>
+                            <span>30%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-between items-center">
+                <div>
+                    <button id="resetBtn" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded">Reset All</button>
+                </div>
+                <div class="text-sm text-gray-400">
+                    Changes take effect immediately
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Social groups data
+        const socialGroups = [
+            { 
+                id: 'elite',
+                name: 'Elite',
+                color: 'bg-purple-500',
+                baseIncome: 25000,
+                baseMood: 8,
+                baseSatisfaction: 7,
+                baseUnemployment: 0.02,
+                count: 20,
+                taxSensitivity: 1.5,
+                benefitSensitivity: 0.2,
+                wageSensitivity: 0.1
+            },
+            { 
+                id: 'middle',
+                name: 'Middle Class',
+                color: 'bg-blue-500',
+                baseIncome: 5000,
+                baseMood: 6,
+                baseSatisfaction: 6,
+                baseUnemployment: 0.05,
+                count: 60,
+                taxSensitivity: 1.2,
+                benefitSensitivity: 0.6,
+                wageSensitivity: 0.8
+            },
+            { 
+                id: 'working',
+                name: 'Working Class',
+                color: 'bg-green-500',
+                baseIncome: 2500,
+                baseMood: 5,
+                baseSatisfaction: 5,
+                baseUnemployment: 0.08,
+                count: 80,
+                taxSensitivity: 1.0,
+                benefitSensitivity: 1.0,
+                wageSensitivity: 1.2
+            },
+            { 
+                id: 'vulnerable',
+                name: 'Vulnerable',
+                color: 'bg-red-500',
+                baseIncome: 1000,
+                baseMood: 4,
+                baseSatisfaction: 4,
+                baseUnemployment: 0.15,
+                count: 40,
+                taxSensitivity: 0.8,
+                benefitSensitivity: 1.5,
+                wageSensitivity: 0.5
+            }
+        ];
+
+        // Current state
+        let currentState = {
+            eliteTax: 25,
+            middleTax: 20,
+            workingTax: 15,
+            vulnerableTax: 5,
+            ubi: 200,
+            unemploymentBenefit: 500,
+            housingSupport: 200,
+            healthcareSubsidy: 300,
+            minWage: 10,
+            workWeek: 40,
+            vacationDays: 10,
+            retirementAge: 65,
+            healthcareSpending: 15,
+            educationSpending: 12,
+            defenseSpending: 10,
+            infrastructureSpending: 8
+        };
+
+        // Initialize the city
+        function initCity() {
+            const cityCanvas = document.getElementById('cityCanvas');
+            
+
+            // Create people
+            socialGroups.forEach(group => {
+                for (let i = 0; i < group.count; i++) {
+                    const person = document.createElement('div');
+                    person.className = `person ${group.id}`;
+                    
+                    // Random position - fixed at bottom
+                    const left = Math.floor(Math.random() * 90) + 5;
+                    const bottom = 5; // Fixed at bottom of the image
+                    
+                    person.style.left = `${left}%`;
+                    person.style.bottom = `${bottom}px`;
+                    
+                    cityCanvas.appendChild(person);
+                }
+            });
+        }
+
+        // Update stats based on current state
+        function updateStats() {
+            const statsTable = document.getElementById('statsTable');
+            statsTable.innerHTML = '';
+            
+            // Calculate economic indicators
+            let totalIncome = 0;
+            let totalPopulation = 0;
+            let incomeDistribution = [];
+            
+            socialGroups.forEach(group => {
+                // Get tax rate for this group
+                const taxRate = currentState[`${group.id}Tax`] / 100;
+                
+                // Calculate adjusted income (affected by policies)
+                let adjustedIncome = group.baseIncome;
+                
+                // Adjust for minimum wage (affects working and vulnerable more)
+                if (group.id === 'working' || group.id === 'vulnerable') {
+                    adjustedIncome = Math.max(adjustedIncome, currentState.minWage * currentState.workWeek * 4);
+                }
+                
+                // Adjust for work week (longer hours = more income)
+                adjustedIncome = adjustedIncome * (currentState.workWeek / 40);
+                
+                // Calculate net income after taxes
+                const netIncome = adjustedIncome * (1 - taxRate);
+                
+                // Add benefits
+                const totalBenefits = currentState.ubi + 
+                                    (group.baseUnemployment * currentState.unemploymentBenefit) + 
+                                    currentState.housingSupport + 
+                                    currentState.healthcareSubsidy;
+                
+                const finalIncome = netIncome + totalBenefits;
+                
+                // Calculate mood and satisfaction
+                let mood = group.baseMood;
+                let satisfaction = group.baseSatisfaction;
+                
+                // Mood affected by taxes (higher taxes = lower mood)
+                mood -= taxRate * group.taxSensitivity * 2;
+                
+                // Mood affected by benefits (higher benefits = higher mood)
+                mood += (totalBenefits / 2000) * group.benefitSensitivity;
+                
+                // Mood affected by work conditions
+                mood += (currentState.vacationDays / 30) * 2;
+                mood -= ((currentState.workWeek - 40) / 20) * 0.5;
+                
+                // Satisfaction affected by government spending
+                satisfaction += (currentState.healthcareSpending / 30) * 0.5;
+                satisfaction += (currentState.educationSpending / 30) * 0.5;
+                satisfaction += (currentState.infrastructureSpending / 30) * 0.3;
+                satisfaction -= (currentState.defenseSpending / 30) * 0.2;
+                
+                // Clamp values between 1 and 10
+                mood = Math.max(1, Math.min(10, mood));
+                satisfaction = Math.max(1, Math.min(10, satisfaction));
+                
+                // Unemployment affected by policies
+                let unemployment = group.baseUnemployment;
+                
+                // Higher minimum wage increases unemployment for vulnerable
+                if (group.id === 'vulnerable' || group.id === 'working') {
+                    unemployment += (currentState.minWage - 10) * 0.005;
+                }
+                
+                // Government spending reduces unemployment
+                unemployment -= (currentState.educationSpending / 30) * 0.02;
+                unemployment -= (currentState.infrastructureSpending / 30) * 0.01;
+                
+                unemployment = Math.max(0.01, Math.min(0.3, unemployment));
+                
+                // Add to economic indicators
+                const groupTotalIncome = finalIncome * group.count * (1 - unemployment);
+                totalIncome += groupTotalIncome;
+                totalPopulation += group.count;
+                
+                // Debug logging
+                console.log(`${group.name}: finalIncome=${finalIncome}, count=${group.count}, unemployment=${unemployment}, groupTotal=${groupTotalIncome}`);
+                
+                incomeDistribution.push({
+                    group: group.id,
+                    income: finalIncome,
+                    count: group.count
+                });
+                
+                // Create table row
+                const row = document.createElement('tr');
+                row.className = 'table-row border-b border-gray-700';
+                row.style.cursor = 'pointer';
+                row.addEventListener('click', () => openGroupModal(group.id));
+                
+                // Mood indicator with color
+                const moodColor = mood < 4 ? 'text-red-400' : mood < 7 ? 'text-yellow-400' : 'text-green-400';
+                const moodIndicator = `<span class="inline-block w-3 h-3 rounded-full ${moodColor} mr-1"></span>`;
+                
+                // Group image mapping
+                const groupImages = {
+                    'elite': './img/pink.png',
+                    'middle': './img/blue.png', 
+                    'working': './img/green.png',
+                    'vulnerable': './img/red.png'
+                };
+                
+                row.innerHTML = `
+                    <td class="py-2 flex items-center">
+                        <img src="${groupImages[group.id]}" alt="${group.name}" class="inline-block w-4 h-4 mr-2">
+                        ${group.name}
+                    </td>
+                    <td class="py-2 text-right">
+                        ${moodIndicator}
+                        ${mood.toFixed(1)}
+                    </td>
+                    <td class="py-2 text-right">$${adjustedIncome.toFixed(0)}</td>
+                    <td class="py-2 text-right">$${finalIncome.toFixed(0)}</td>
+                    <td class="py-2 text-right">${(unemployment * 100).toFixed(1)}%</td>
+                    <td class="py-2 text-right">${satisfaction.toFixed(1)}</td>
+                `;
+                
+                statsTable.appendChild(row);
+            });
+            
+            // Calculate GDP (total economic output)
+            const gdp = totalIncome * 12; // Annualize monthly income
+            
+            // Debug: log values to see what's happening
+            console.log('Total Income:', totalIncome, 'GDP:', gdp);
+            
+            // Format GDP properly
+            if (gdp >= 1000000000) {
+                document.getElementById('gdpIndicator').textContent = `$${(gdp / 1000000000).toFixed(1)}B`;
+            } else if (gdp >= 1000000) {
+                document.getElementById('gdpIndicator').textContent = `$${(gdp / 1000000).toFixed(1)}M`;
+            } else {
+                document.getElementById('gdpIndicator').textContent = `$${(gdp / 1000).toFixed(0)}K`;
+            }
+            
+            // Calculate Gini coefficient (income inequality)
+            const sortedIncomes = incomeDistribution.sort((a, b) => a.income - b.income);
+            
+            let totalWealth = 0;
+            let giniSum = 0;
+            
+            sortedIncomes.forEach(group => {
+                totalWealth += group.income * group.count;
+            });
+            
+            let cumulativeWealth = 0;
+            sortedIncomes.forEach((group, i) => {
+                cumulativeWealth += group.income * group.count;
+                const wealthShare = cumulativeWealth / totalWealth;
+                const populationShare = sortedIncomes.slice(0, i + 1).reduce((sum, g) => sum + g.count, 0) / totalPopulation;
+                giniSum += wealthShare - populationShare;
+            });
+            
+            const giniCoefficient = Math.abs(giniSum / sortedIncomes.length);
+            document.getElementById('giniIndicator').textContent = Math.min(0.99, Math.max(0.01, giniCoefficient)).toFixed(2);
+            
+            // Calculate poverty rate (dynamic poverty line)
+            const averageIncome = totalIncome / totalPopulation;
+            const povertyLine = averageIncome * 0.6; // 60% of average income
+            let poorPopulation = 0;
+            
+            incomeDistribution.forEach(group => {
+                if (group.income < povertyLine) {
+                    poorPopulation += group.count;
+                }
+            });
+            
+            const povertyRate = (poorPopulation / totalPopulation) * 100;
+            document.getElementById('povertyIndicator').textContent = `${povertyRate.toFixed(1)}%`;
+            
+            // Calculate happiness (weighted average of actual mood)
+            let totalHappiness = 0;
+            let totalMoodPopulation = 0;
+            
+            socialGroups.forEach(group => {
+                // Recalculate mood for each group based on current policies
+                const taxRate = currentState[`${group.id}Tax`] / 100;
+                
+                const totalBenefits = currentState.ubi + 
+                                    (group.baseUnemployment * currentState.unemploymentBenefit) + 
+                                    currentState.housingSupport + 
+                                    currentState.healthcareSubsidy;
+                
+                let mood = group.baseMood;
+                mood -= taxRate * group.taxSensitivity * 2;
+                mood += (totalBenefits / 2000) * group.benefitSensitivity;
+                mood += (currentState.vacationDays / 30) * 2;
+                mood -= ((currentState.workWeek - 40) / 20) * 0.5;
+                mood += (currentState.healthcareSpending / 30) * 0.5;
+                mood += (currentState.educationSpending / 30) * 0.5;
+                mood += (currentState.infrastructureSpending / 30) * 0.3;
+                mood -= (currentState.defenseSpending / 30) * 0.2;
+                
+                mood = Math.max(1, Math.min(10, mood));
+                
+                totalHappiness += mood * group.count;
+                totalMoodPopulation += group.count;
+            });
+            
+            const avgHappiness = totalHappiness / totalMoodPopulation;
+            document.getElementById('happinessIndicator').textContent = `${avgHappiness.toFixed(1)}/10`;
+            
+            // Show click hints on first visit
+            setTimeout(() => {
+                showClickHints();
+            }, 1000); // Delay to ensure table is fully rendered
+            
+            // Update person animations based on mood
+            socialGroups.forEach(group => {
+                // Simplified - in reality we'd need to recalculate mood here
+                const mood = group.baseMood - (currentState[`${group.id}Tax`] / 100) * group.taxSensitivity * 2;
+                
+                const people = document.querySelectorAll(`.${group.id}`);
+                people.forEach(person => {
+                    // Change animation based on mood
+                    if (mood < 4) {
+                        person.style.animation = 'shake 0.5s infinite';
+                    } else if (mood < 7) {
+                        person.style.animation = 'none';
+                    } else {
+                        person.classList.add('pulse');
+                    }
+                    
+                    // Keep people at bottom (movement handled by continuous animation)
+                    person.style.bottom = `1px`;
+                });
+            });
+        }
+
+        // Initialize slider values
+        function initSliders() {
+            Object.keys(currentState).forEach(key => {
+                const slider = document.getElementById(key);
+                if (slider) {
+                    slider.value = currentState[key];
+                    const valueDisplay = document.getElementById(`${key}Value`);
+                    if (valueDisplay) {
+                        if (key.includes('Tax') || key.includes('Spending')) {
+                            valueDisplay.textContent = `${currentState[key]}%`;
+                        } else if (key.includes('Wage')) {
+                            valueDisplay.textContent = `$${currentState[key].toFixed(1)}`;
+                        } else if (key === 'ubi' || key === 'unemploymentBenefit' || 
+                                  key === 'housingSupport' || key === 'healthcareSubsidy') {
+                            valueDisplay.textContent = `$${currentState[key]}`;
+                        } else {
+                            valueDisplay.textContent = currentState[key];
+                        }
+                    }
+                }
+            });
+        }
+
+        // Political system presets
+        const politicalSystems = {
+            socialism: {
+                name: "Socialism",
+                settings: {
+                    eliteTax: 60,
+                    middleTax: 30,
+                    workingTax: 15,
+                    vulnerableTax: 0,
+                    ubi: 1500,
+                    unemploymentBenefit: 1200,
+                    housingSupport: 800,
+                    healthcareSubsidy: 1000,
+                    minWage: 18,
+                    workWeek: 35,
+                    vacationDays: 25,
+                    retirementAge: 60,
+                    healthcareSpending: 25,
+                    educationSpending: 20,
+                    defenseSpending: 5,
+                    infrastructureSpending: 15
+                },
+                populationChanges: {
+                    elite: { count: 5 }, // Drastically reduce elite
+                    middle: { count: 80 },
+                    working: { count: 100 },
+                    vulnerable: { count: 15 }
+                }
+            },
+            capitalism: {
+                name: "Capitalism",
+                settings: {
+                    eliteTax: 15,
+                    middleTax: 25,
+                    workingTax: 20,
+                    vulnerableTax: 10,
+                    ubi: 0,
+                    unemploymentBenefit: 300,
+                    housingSupport: 100,
+                    healthcareSubsidy: 150,
+                    minWage: 7.5,
+                    workWeek: 45,
+                    vacationDays: 10,
+                    retirementAge: 67,
+                    healthcareSpending: 8,
+                    educationSpending: 10,
+                    defenseSpending: 15,
+                    infrastructureSpending: 12
+                },
+                populationChanges: {
+                    elite: { count: 30 },
+                    middle: { count: 50 },
+                    working: { count: 70 },
+                    vulnerable: { count: 50 }
+                }
+            },
+            socialDemocracy: {
+                name: "Social Democracy",
+                settings: {
+                    eliteTax: 40,
+                    middleTax: 25,
+                    workingTax: 18,
+                    vulnerableTax: 5,
+                    ubi: 800,
+                    unemploymentBenefit: 900,
+                    housingSupport: 500,
+                    healthcareSubsidy: 600,
+                    minWage: 15,
+                    workWeek: 37,
+                    vacationDays: 20,
+                    retirementAge: 63,
+                    healthcareSpending: 18,
+                    educationSpending: 16,
+                    defenseSpending: 8,
+                    infrastructureSpending: 13
+                },
+                populationChanges: {
+                    elite: { count: 15 },
+                    middle: { count: 70 },
+                    working: { count: 85 },
+                    vulnerable: { count: 30 }
+                }
+            },
+            libertarian: {
+                name: "Libertarian",
+                settings: {
+                    eliteTax: 10,
+                    middleTax: 10,
+                    workingTax: 10,
+                    vulnerableTax: 10,
+                    ubi: 0,
+                    unemploymentBenefit: 0,
+                    housingSupport: 0,
+                    healthcareSubsidy: 0,
+                    minWage: 0,
+                    workWeek: 50,
+                    vacationDays: 5,
+                    retirementAge: 70,
+                    healthcareSpending: 5,
+                    educationSpending: 8,
+                    defenseSpending: 3,
+                    infrastructureSpending: 6
+                },
+                populationChanges: {
+                    elite: { count: 25 },
+                    middle: { count: 45 },
+                    working: { count: 75 },
+                    vulnerable: { count: 55 }
+                }
+            }
+        };
+
+        // Apply political system
+        function applyPoliticalSystem(systemKey) {
+            const system = politicalSystems[systemKey];
+            if (!system) return;
+
+            // Apply settings
+            Object.keys(system.settings).forEach(key => {
+                currentState[key] = system.settings[key];
+            });
+
+            // Apply population changes
+            Object.keys(system.populationChanges).forEach(groupId => {
+                const group = socialGroups.find(g => g.id === groupId);
+                if (group) {
+                    group.count = system.populationChanges[groupId].count;
+                }
+            });
+
+            // Recreate city with new population
+            document.getElementById('cityCanvas').innerHTML = '';
+            
+            // Recreate people with new counts
+            socialGroups.forEach(group => {
+                for (let i = 0; i < group.count; i++) {
+                    const person = document.createElement('div');
+                    person.className = `person ${group.id}`;
+                    
+                    const left = Math.floor(Math.random() * 90) + 5;
+                    const bottom = 5;
+                    
+                    person.style.left = `${left}%`;
+                    person.style.bottom = `${bottom}px`;
+                    
+                    document.getElementById('cityCanvas').appendChild(person);
+                }
+            });
+
+            // Update sliders and stats
+            initSliders();
+            updateStats();
+            checkAchievements();
+        }
+
+        // Group information for modals
+        const groupInfo = {
+            elite: {
+                name: "Elite",
+                image: "./img/pink.png",
+                advantages: [
+                    "Highest income potential",
+                    "Access to exclusive opportunities",
+                    "Political influence and connections",
+                    "Investment and property ownership",
+                    "Educational advantages"
+                ],
+                disadvantages: [
+                    "Target for higher taxation",
+                    "Social responsibility pressure",
+                    "Economic instability affects investments",
+                    "Public scrutiny and criticism",
+                    "Isolation from general population"
+                ],
+                influence: [
+                    "Drives economic growth through investments",
+                    "Creates job opportunities",
+                    "Influences political decisions",
+                    "Sets cultural and social trends",
+                    "Contributes significantly to tax revenue"
+                ]
+            },
+            middle: {
+                name: "Middle Class",
+                image: "./img/blue.png",
+                advantages: [
+                    "Stable income and employment",
+                    "Access to education and healthcare",
+                    "Social mobility opportunities",
+                    "Political voice and representation",
+                    "Balanced work-life lifestyle"
+                ],
+                disadvantages: [
+                    "Vulnerable to economic downturns",
+                    "Heavy tax burden",
+                    "Limited wealth accumulation",
+                    "Rising cost of living pressure",
+                    "Job market competition"
+                ],
+                influence: [
+                    "Backbone of consumer economy",
+                    "Main tax revenue source",
+                    "Political swing voters",
+                    "Drives demand for services",
+                    "Maintains social stability"
+                ]
+            },
+            working: {
+                name: "Working Class",
+                image: "./img/green.png",
+                advantages: [
+                    "Essential workforce contribution",
+                    "Strong community bonds",
+                    "Practical skills and experience",
+                    "Union representation potential",
+                    "Job security in essential sectors"
+                ],
+                disadvantages: [
+                    "Limited income growth",
+                    "Physical job demands",
+                    "Fewer advancement opportunities",
+                    "Economic vulnerability",
+                    "Limited access to benefits"
+                ],
+                influence: [
+                    "Powers essential industries",
+                    "Drives labor movements",
+                    "Influences minimum wage policies",
+                    "Maintains infrastructure",
+                    "Supports local economies"
+                ]
+            },
+            vulnerable: {
+                name: "Vulnerable",
+                image: "./img/red.png",
+                advantages: [
+                    "Eligible for social support programs",
+                    "Community assistance networks",
+                    "Potential for government aid",
+                    "Resilience and adaptability",
+                    "Motivation for social change"
+                ],
+                disadvantages: [
+                    "Financial instability",
+                    "Limited access to opportunities",
+                    "Health and housing challenges",
+                    "Educational barriers",
+                    "Social stigma and discrimination"
+                ],
+                influence: [
+                    "Drives social welfare policies",
+                    "Highlights inequality issues",
+                    "Motivates charitable activities",
+                    "Influences minimum wage debates",
+                    "Represents need for social reform"
+                ]
+            }
+        };
+
+        // Modal functions
+
+        function closeGroupModal() {
+            const modal = document.getElementById('groupModal');
+            modal.classList.remove('show');
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('groupModal');
+            if (e.target === modal) {
+                closeGroupModal();
+            }
+        });
+
+        // Click hint functions
+        function showClickHints() {
+            if (!firstVisit || clickButtonsShown) return;
+            
+            const tableRows = document.querySelectorAll('.table-row');
+            tableRows.forEach((row, index) => {
+                // Add click hint class for positioning
+                row.classList.add('click-hint');
+                
+                // Create click button
+                const clickButton = document.createElement('div');
+                clickButton.className = 'click-button';
+                clickButton.textContent = 'CLICK';
+                clickButton.style.animationDelay = `${index * 0.2}s`; // Stagger animation
+                
+                // Add click handler to button itself
+                clickButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    row.click(); // Trigger the row click
+                });
+                
+                row.appendChild(clickButton);
+            });
+            
+            clickButtonsShown = true;
+            
+            // Auto-hide after 8 seconds
+            setTimeout(() => {
+                hideClickHints();
+            }, 8000);
+        }
+
+        function hideClickHints() {
+            const clickButtons = document.querySelectorAll('.click-button');
+            clickButtons.forEach(button => {
+                button.classList.add('fade-out');
+                setTimeout(() => {
+                    if (button.parentNode) {
+                        button.parentNode.removeChild(button);
+                        button.parentNode.classList.remove('click-hint');
+                    }
+                }, 300);
+            });
+            firstVisit = false;
+        }
+
+        // Hide click hints when any group modal is opened
+        function openGroupModal(groupId) {
+            // Hide click hints immediately when user interacts
+            if (firstVisit && clickButtonsShown) {
+                hideClickHints();
+            }
+            
+            const group = groupInfo[groupId];
+            if (!group) return;
+
+            const modal = document.getElementById('groupModal');
+            const title = document.getElementById('modalTitle');
+            const img = document.getElementById('modalCharacterImg');
+            const advantages = document.getElementById('modalAdvantages');
+            const disadvantages = document.getElementById('modalDisadvantages');
+            const influence = document.getElementById('modalInfluence');
+
+            // Set title and image
+            title.textContent = group.name;
+            img.style.backgroundImage = `url('${group.image}')`;
+
+            // Clear and populate advantages
+            advantages.innerHTML = '';
+            group.advantages.forEach(advantage => {
+                const li = document.createElement('li');
+                li.className = 'positive';
+                li.textContent = advantage;
+                advantages.appendChild(li);
+            });
+
+            // Clear and populate disadvantages
+            disadvantages.innerHTML = '';
+            group.disadvantages.forEach(disadvantage => {
+                const li = document.createElement('li');
+                li.className = 'negative';
+                li.textContent = disadvantage;
+                disadvantages.appendChild(li);
+            });
+
+            // Clear and populate influence
+            influence.innerHTML = '';
+            group.influence.forEach(inf => {
+                const li = document.createElement('li');
+                li.className = 'influence';
+                li.textContent = inf;
+                influence.appendChild(li);
+            });
+
+            // Show modal
+            modal.classList.add('show');
+        }
+
+        // Achievement system
+        const achievements = {
+            firstStep: {
+                id: 'firstStep',
+                title: 'Your First Step',
+                desc: 'Welcome to politics! You made your first policy change.',
+                icon: '👶',
+                unlocked: false
+            },
+            scrooge: {
+                id: 'scrooge',
+                title: 'Scrooge McDuck',
+                desc: 'You cut all social benefits to minimum. Money saved!',
+                icon: '💰',
+                unlocked: false
+            },
+            slaveMaster: {
+                id: 'slaveMaster',
+                title: 'Lord of Slaves',
+                desc: 'Maximum work hours + minimum wage = maximum exploitation!',
+                icon: '⛓️',
+                unlocked: false
+            },
+            robinHood: {
+                id: 'robinHood',
+                title: 'Robin Hood',
+                desc: 'Maximum taxes on elite + maximum benefits for poor!',
+                icon: '🏹',
+                unlocked: false
+            },
+            workaholic: {
+                id: 'workaholic',
+                title: 'Workaholic Nation',
+                desc: 'Work week set to maximum! No rest for the productive!',
+                icon: '💼',
+                unlocked: false
+            },
+            socialist: {
+                id: 'socialist',
+                title: 'Comrade',
+                desc: 'You eliminated the elite class. Workers unite!',
+                icon: '☭',
+                unlocked: false
+            },
+            capitalist: {
+                id: 'capitalist',
+                title: 'Wall Street Wolf',
+                desc: 'Low taxes, minimal benefits. Let the market decide!',
+                icon: '🐺',
+                unlocked: false
+            },
+            generous: {
+                id: 'generous',
+                title: 'Santa Claus',
+                desc: 'Maximum UBI! Everyone gets presents!',
+                icon: '🎅',
+                unlocked: false
+            },
+            taxman: {
+                id: 'taxman',
+                title: 'The Taxman',
+                desc: 'All tax rates set to maximum. Nothing escapes taxation!',
+                icon: '💸',
+                unlocked: false
+            },
+            libertarian: {
+                id: 'libertarian',
+                title: 'Freedom Fighter',
+                desc: 'Minimum government intervention. Pure liberty!',
+                icon: '🗽',
+                unlocked: false
+            }
+        };
+
+        let firstPolicyChange = false;
+        let firstVisit = true;
+        let clickButtonsShown = false;
+
+        // Show achievement notification
+        function showAchievement(achievementId) {
+            const achievement = achievements[achievementId];
+            if (!achievement || achievement.unlocked) return;
+
+            achievement.unlocked = true;
+            
+            const notification = document.getElementById('achievementNotification');
+            const title = document.getElementById('achievementTitle');
+            const desc = document.getElementById('achievementDesc');
+            const icon = notification.querySelector('.achievement-icon');
+
+            title.textContent = achievement.title;
+            desc.textContent = achievement.desc;
+            icon.textContent = achievement.icon;
+
+            // Show notification
+            notification.classList.add('show');
+
+            // Hide after 4 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+        }
+
+        // Check for achievements
+        function checkAchievements() {
+            // First Step
+            if (!firstPolicyChange) {
+                firstPolicyChange = true;
+                showAchievement('firstStep');
+                return;
+            }
+
+            // Scrooge - all benefits to minimum
+            if (currentState.ubi === 0 && 
+                currentState.unemploymentBenefit === 0 && 
+                currentState.housingSupport === 0 && 
+                currentState.healthcareSubsidy === 0) {
+                showAchievement('scrooge');
+            }
+
+            // Slave Master - max work hours + min wage
+            if (currentState.workWeek === 60 && currentState.minWage === 0) {
+                showAchievement('slaveMaster');
+            }
+
+            // Robin Hood - max elite tax + max benefits
+            if (currentState.eliteTax === 60 && 
+                currentState.ubi === 2000 && 
+                currentState.unemploymentBenefit === 1500) {
+                showAchievement('robinHood');
+            }
+
+            // Workaholic - max work week
+            if (currentState.workWeek === 60) {
+                showAchievement('workaholic');
+            }
+
+            // Generous - max UBI
+            if (currentState.ubi === 2000) {
+                showAchievement('generous');
+            }
+
+            // Taxman - all taxes to max
+            if (currentState.eliteTax === 60 && 
+                currentState.middleTax === 40 && 
+                currentState.workingTax === 30 && 
+                currentState.vulnerableTax === 20) {
+                showAchievement('taxman');
+            }
+
+            // Check political system achievements
+            const eliteCount = socialGroups.find(g => g.id === 'elite').count;
+            if (eliteCount <= 5) {
+                showAchievement('socialist');
+            }
+
+            // Capitalist - low taxes, low benefits
+            if (currentState.eliteTax <= 15 && 
+                currentState.ubi === 0 && 
+                currentState.unemploymentBenefit <= 300) {
+                showAchievement('capitalist');
+            }
+
+            // Libertarian - all government spending low
+            if (currentState.healthcareSpending <= 5 && 
+                currentState.educationSpending <= 8 && 
+                currentState.infrastructureSpending <= 6) {
+                showAchievement('libertarian');
+            }
+        }
+
+        // Add event listeners to sliders
+        function setupEventListeners() {
+            Object.keys(currentState).forEach(key => {
+                const slider = document.getElementById(key);
+                if (slider) {
+                    slider.addEventListener('input', function() {
+                        currentState[key] = parseFloat(this.value);
+                        const valueDisplay = document.getElementById(`${key}Value`);
+                        if (valueDisplay) {
+                            if (key.includes('Tax') || key.includes('Spending')) {
+                                valueDisplay.textContent = `${currentState[key]}%`;
+                            } else if (key.includes('Wage')) {
+                                valueDisplay.textContent = `$${currentState[key].toFixed(1)}`;
+                            } else if (key === 'ubi' || key === 'unemploymentBenefit' || 
+                                      key === 'housingSupport' || key === 'healthcareSubsidy') {
+                                valueDisplay.textContent = `$${currentState[key]}`;
+                            } else {
+                                valueDisplay.textContent = currentState[key];
+                            }
+                        }
+                        updateStats();
+                        checkAchievements();
+                    });
+                }
+            });
+            
+            // Reset button
+            document.getElementById('resetBtn').addEventListener('click', function() {
+                currentState = {
+                    eliteTax: 25,
+                    middleTax: 20,
+                    workingTax: 15,
+                    vulnerableTax: 5,
+                    ubi: 200,
+                    unemploymentBenefit: 500,
+                    housingSupport: 200,
+                    healthcareSubsidy: 300,
+                    minWage: 10,
+                    workWeek: 40,
+                    vacationDays: 10,
+                    retirementAge: 65,
+                    healthcareSpending: 15,
+                    educationSpending: 12,
+                    defenseSpending: 10,
+                    infrastructureSpending: 8
+                };
+                
+                initSliders();
+                updateStats();
+            });
+            
+            // Political party buttons
+            document.getElementById('socialismBtn').addEventListener('click', function() {
+                applyPoliticalSystem('socialism');
+            });
+            
+            document.getElementById('capitalismBtn').addEventListener('click', function() {
+                applyPoliticalSystem('capitalism');
+            });
+            
+            document.getElementById('socialDemocracyBtn').addEventListener('click', function() {
+                applyPoliticalSystem('socialDemocracy');
+            });
+            
+            document.getElementById('libertarianBtn').addEventListener('click', function() {
+                applyPoliticalSystem('libertarian');
+            });
+        }
+
+        // Continuous movement for people
+        function movePeople() {
+            const people = document.querySelectorAll('.person');
+            people.forEach(person => {
+                const currentLeft = parseFloat(person.style.left);
+                
+                // Get or set random direction and speed for each person
+                if (!person.dataset.direction) {
+                    person.dataset.direction = Math.random() > 0.5 ? '1' : '-1';
+                    person.dataset.speed = (Math.random() * 0.3 + 0.1).toFixed(2); // 0.1 to 0.4
+                }
+                
+                const direction = parseFloat(person.dataset.direction);
+                const speed = parseFloat(person.dataset.speed);
+                
+                // Calculate new position
+                let newLeft = currentLeft + (direction * speed);
+                
+                // Bounce off edges and change direction
+                if (newLeft <= 0) {
+                    newLeft = 0;
+                    person.dataset.direction = '1';
+                } else if (newLeft >= 95) {
+                    newLeft = 95;
+                    person.dataset.direction = '-1';
+                }
+                
+                // Randomly change direction sometimes (5% chance)
+                if (Math.random() < 0.05) {
+                    person.dataset.direction = (direction * -1).toString();
+                }
+                
+                person.style.left = `${newLeft}%`;
+            });
+        }
+
+        // Initialize the app
+        function init() {
+            initCity();
+            initSliders();
+            setupEventListeners();
+            updateStats();
+            
+            // Start continuous movement
+            setInterval(movePeople, 100); // Update every 100ms for smooth movement
+        }
+
+        // Start the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
